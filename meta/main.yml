@@ -1,6 +1,6 @@
 ---
 galaxy_info:
-  role_name: arduino_patch_platform
+  role_name: arduino-patch-platform
   namespace: MXPicture
   author: Tobias Bildner
   description: "Removes -w from platform.txt in Arduino cores"
