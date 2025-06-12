@@ -1,6 +1,4 @@
 ---
-# Root directory to search for platform.txt files
----
 # Determine Arduino package directory based on platform (macOS vs Linux path)
 arduino_platform_root: >-
   {{

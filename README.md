@@ -59,6 +59,12 @@ Example Playbook
         arduino_patch_mode: restore
 ```
 
+Local Testing
+-------
+
+`cd ..`
+`ansible-playbook -i localhost, -c local roles/ansible-role-arduino-patch-platform/tests/test.yml`
+
 License
 -------
 

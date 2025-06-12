@@ -1,5 +1,5 @@
 ---
 - hosts: localhost
-  remote_user: root
+  gather_facts: yes
   roles:
-    - ansible-role-arduino-patch-platform
+    - role: ansible-role-arduino-patch-platform
