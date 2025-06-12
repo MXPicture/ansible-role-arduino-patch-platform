@@ -1,25 +1,26 @@
 ---
 
 - name: Find all platform.txt files
-  find:
+  ansible.builtin.find:
     paths: "{{ arduino_platform_root }}"
     patterns: "platform.txt"
     recurse: true
   register: platform_txt_files
 
 - name: Back up original platform.txt (if not already backed up)
-  copy:
+  ansible.builtin.copy:
     src: "{{ item.path }}"
     dest: "{{ item.path }}.bak"
     remote_src: true
     force: false
+    mode: "644"
   loop: "{{ platform_txt_files.files }}"
   when: arduino_patch_mode == 'patch'
   loop_control:
     label: "{{ item.path }}"
 
 - name: Read platform.txt for audit
-  slurp:
+  ansible.builtin.slurp:
     src: "{{ item.path }}"
   register: slurped_platforms
   loop: "{{ platform_txt_files.files }}"
@@ -35,7 +36,7 @@
     warning_line | length > 0 and
     warning_line[0] != 'compiler.warning_flags=' and
     warning_line[0] != 'compiler.warning_flags=-w'
-  debug:
+  ansible.builtin.debug:
     msg: >
       ⚠️ Unexpected compiler.warning_flags in {{ item.invocation.module_args.src }}:
       {{ warning_line[0] }}
@@ -44,7 +45,7 @@
     label: "{{ item.invocation.module_args.src }}"
 
 - name: Replace exact line 'compiler.warning_flags=-w'
-  lineinfile:
+  ansible.builtin.lineinfile:
     path: "{{ item.path }}"
     regexp: '^compiler\.warning_flags=-w$'
     line: 'compiler.warning_flags='
@@ -64,7 +65,7 @@
     warning_line | length > 0 and
     warning_line[0] != 'compiler.warning_flags.none=' and
     warning_line[0] != 'compiler.warning_flags.none=-w'
-  debug:
+  ansible.builtin.debug:
     msg: >
       ⚠️ Unexpected compiler.warning_flags.none in {{ item.invocation.module_args.src }}:
       {{ warning_line[0] }}
@@ -73,7 +74,7 @@
     label: "{{ item.invocation.module_args.src }}"
 
 - name: Replace exact line 'compiler.warning_flags.none=-w'
-  lineinfile:
+  ansible.builtin.lineinfile:
     path: "{{ item.path }}"
     regexp: '^compiler\.warning_flags.none=-w$'
     line: 'compiler.warning_flags.none='
@@ -85,11 +86,12 @@
     label: "{{ item.path }}"
 
 - name: Restore platform.txt from backup
-  copy:
+  ansible.builtin.copy:
     src: "{{ item.path }}.bak"
     dest: "{{ item.path }}"
     remote_src: true
     force: true
+    mode: "644"
   loop: "{{ platform_txt_files.files }}"
   when:
     - arduino_patch_mode == 'restore'
