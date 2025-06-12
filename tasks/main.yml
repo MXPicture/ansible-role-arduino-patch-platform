@@ -18,12 +18,37 @@
   loop_control:
     label: "{{ item.path }}"
 
-- name: Remove '-w' and inject warning flags
-  replace:
+- name: Read platform.txt for audit
+  slurp:
+    src: "{{ item.path }}"
+  register: slurped_platforms
+  loop: "{{ platform_txt_files.files }}"
+  loop_control:
+    label: "{{ item.path }}"
+
+- name: Warn about unexpected warning flags
+  vars:
+    decoded: "{{ item.content | b64decode }}"
+    warning_line: "{{ decoded.splitlines() | select('match', '^compiler\\.warning_flags=') | list }}"
+  when: >
+    warning_line | length > 0 and
+    warning_line[0] != 'compiler.warning_flags=' and
+    warning_line[0] != 'compiler.warning_flags=-w'
+  debug:
+    msg: >
+      ⚠️ Unexpected compiler.warning_flags in {{ item.invocation.module_args.src }}:
+      {{ warning_line[0] }}
+  loop: "{{ slurped_platforms.results }}"
+  loop_control:
+    label: "{{ item.invocation.module_args.src }}"
+
+- name: Replace exact line 'compiler.warning_flags=-w'
+  lineinfile:
     path: "{{ item.path }}"
-    regexp: '^(compiler\.warning_flags=.*)(?:\s|^)-w(?:\s|$)'
-    replace: '\1 -Wall -Wextra -Werror=return-type'
-    backup: no
+    regexp: '^compiler\.warning_flags=-w$'
+    line: 'compiler.warning_flags='
+    backup: false
+    state: present
   loop: "{{ platform_txt_files.files }}"
   when: arduino_patch_mode == 'patch'
   loop_control:
