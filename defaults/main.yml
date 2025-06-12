@@ -1,0 +1,17 @@
+---
+# Root directory to search for platform.txt files
+---
+# Determine Arduino package directory based on platform (macOS vs Linux path)
+arduino_platform_root: >-
+  {{
+    (ansible_system == 'Darwin')
+    | ternary(ansible_env.HOME ~ '/Library/Arduino15/packages',
+              ansible_env.HOME ~ '/.arduino15/packages')
+  }}
+
+
+# Pattern for platform.txt files to patch
+arduino_platform_glob: "{{ arduino_platform_root }}/**/platform.txt"
+
+# patch or restore
+arduino_patch_mode: "patch"

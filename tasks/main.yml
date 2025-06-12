@@ -1,0 +1,46 @@
+---
+
+- name: Find all platform.txt files
+  find:
+    paths: "{{ arduino_platform_root }}"
+    patterns: "platform.txt"
+    recurse: true
+  register: platform_txt_files
+
+- name: Restore platform.txt from backup
+  copy:
+    src: "{{ item.path }}.bak"
+    dest: "{{ item.path }}"
+    force: yes
+  loop: "{{ platform_txt_files.files }}"
+  loop_control:
+    label: "{{ item.path }}"
+  when: arduino_patch_mode == 'restore' and
+        lookup('file', item.path + '.bak', errors='ignore') is not none
+
+- name: Patch platform.txt to remove -w and enable warnings
+  block:
+    - name: Read platform.txt content
+      slurp:
+        src: "{{ item.path }}"
+      register: platform_contents
+      loop: "{{ platform_txt_files.files }}"
+      loop_control:
+        label: "{{ item.path }}"
+
+    - name: Update platform.txt only if -w is present
+      copy:
+        content: >-
+          {{
+            (item.content | b64decode).splitlines()
+            | map('regex_replace', '^(compiler.warning_flags=.*)(\\s|^)\\-w(\\s|$)', '\\1 -Wall -Wextra -Werror=return-type')
+            | join('\n') + '\n'
+          }}
+        dest: "{{ item.source.path }}"
+        backup: yes
+        mode: preserve
+      when: "'-w' in (item.content | b64decode)"
+      loop: "{{ platform_contents.results }}"
+      loop_control:
+        label: "{{ item.source.path }}"
+  when: arduino_patch_mode == 'patch' and platform_txt_files.matched > 0
